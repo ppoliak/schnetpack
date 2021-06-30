@@ -10,6 +10,7 @@ __all__ = [
     "Atomwise",
     "ElementalAtomwise",
     "DipoleMoment",
+    "Charges",
     "ElementalDipoleMoment",
     "Polarizability",
     "ElectronicSpatialExtent",
@@ -43,9 +44,9 @@ class Atomwise(nn.Module):
         stress (str or None): Name of stress property. Compute the derivative with
             respect to the cell parameters if not None. (default: None)
         create_graph (bool): If False, the graph used to compute the grad will be
-            freed. Note that in nearly all cases setting this option to True is not
-            needed and often can be worked around in a much more efficient way.
-            Defaults to the value of create_graph. (default: False)
+            freed. Note that in nearly all cases setting this option to True is not nee
+            ded and often can be worked around in a much more efficient way. Defaults to
+            the value of create_graph. (default: False)
         mean (torch.Tensor or None): mean of property
         stddev (torch.Tensor or None): standard deviation of property (default: None)
         atomref (torch.Tensor or None): reference single-atom properties. Expects
@@ -78,11 +79,12 @@ class Atomwise(nn.Module):
         derivative=None,
         negative_dr=False,
         stress=None,
-        create_graph=False,
+        create_graph=True,
         mean=None,
         stddev=None,
         atomref=None,
         outnet=None,
+        mlmm = None,
     ):
         super(Atomwise, self).__init__()
 
@@ -93,7 +95,8 @@ class Atomwise(nn.Module):
         self.derivative = derivative
         self.negative_dr = negative_dr
         self.stress = stress
-
+        self.mlmm = mlmm 
+        
         mean = torch.FloatTensor([0.0]) if mean is None else mean
         stddev = torch.FloatTensor([1.0]) if stddev is None else stddev
 
@@ -137,6 +140,7 @@ class Atomwise(nn.Module):
         """
         atomic_numbers = inputs[Properties.Z]
         atom_mask = inputs[Properties.atom_mask]
+        mlmm_mask = inputs[Properties.mlmm]
 
         # run prediction
         yi = self.out_net(inputs)
@@ -145,16 +149,14 @@ class Atomwise(nn.Module):
         if self.atomref is not None:
             y0 = self.atomref(atomic_numbers)
             yi = yi + y0
-
-        y = self.atom_pool(yi, atom_mask)
-
-        # collect results
+        
+        y = self.atom_pool(yi*mlmm_mask[...,None], atom_mask)
+        
         result = {self.property: y}
-
         if self.contributions is not None:
             result[self.contributions] = yi
 
-        create_graph = True if self.training else self.create_graph
+        create_graph = self.create_graph if self.training else False
 
         if self.derivative is not None:
             sign = -1.0 if self.negative_dr else 1.0
@@ -188,6 +190,96 @@ class Atomwise(nn.Module):
 
         return result
 
+
+class Charges(Atomwise):
+    """
+    Predicts charges.
+
+    Args:
+        n_in (int): input dimension of representation
+        n_layers (int): number of layers in output network (default: 2)
+        n_neurons (list of int or None): number of neurons in each layer of the output
+            network. If `None`, divide neurons by 2 in each layer. (default: None)
+        activation (torch.Function): activation function for hidden nn
+            (default: schnetpack.nn.activations.shifted_softplus)
+        property (str): name of the output property (default: "y")
+        contributions (str or None): Name of property contributions in return dict.
+            No contributions returned if None. (default: None)
+        charge_correction (str or None): Name of charge labels in dataset. If
+            something is selected, the charge contributions are corrected according
+            to the total charges in the dataset. No charge correction if None.
+            (default: None)
+        predict_magnitude (bool): if True, predict the magnitude of the dipole moment
+            instead of the vector (default: False)
+        mean (torch.FloatTensor or None): mean of dipole (default: None)
+        stddev (torch.FloatTensor or None): stddev of dipole (default: None)
+
+    Returns:
+        dict: vector for the dipole moment
+
+        If predict_magnitude is True returns the magnitude of the dipole moment
+        instead of the vector.
+
+        If contributions is not None latent atomic charges are added to the output
+        dictionary.
+    """
+
+    def __init__(
+        self,
+        n_in,
+        n_layers=2,
+        n_neurons=None,
+        activation=schnetpack.nn.activations.shifted_softplus,
+        property="y",
+        contributions=None,
+        charge_correction=None,
+        predict_magnitude=False,
+        mean=None,
+        stddev=None,
+        outnet=None,
+    ):
+        self.predict_magnitude = predict_magnitude
+        self.charge_correction = charge_correction
+        super(Charges, self).__init__(
+            n_in,
+            1,
+            "sum",
+            n_layers,
+            n_neurons,
+            activation=activation,
+            mean=mean,
+            stddev=stddev,
+            outnet=outnet,
+            property=property,
+            contributions=contributions,
+        )
+
+    def forward(self, inputs):
+        """
+        predicts charges 
+        """
+        positions = inputs[Properties.R]
+        atom_mask = inputs[Properties.atom_mask]
+
+        # run prediction
+        charges = self.out_net(inputs) * atom_mask[:, :, None]
+
+        # charge correction
+        if self.charge_correction is not None:
+            total_charges = inputs[self.charge_correction]
+            charge_correction = total_charges - charges.sum(1)
+            charges = charges + (
+                charge_correction / atom_mask.sum(-1).unsqueeze(-1)
+            ).unsqueeze(-1)
+            charges *= atom_mask[:, :, None]
+
+        y = charges.view(charges.shape[0],charges.shape[1])
+        result = {self.property: y}
+
+        if self.contributions:
+            result[self.contributions] = charges
+
+        return result
 
 class DipoleMoment(Atomwise):
     """

@@ -81,7 +81,6 @@ def train_test_split(
             np.savez(
                 split_file, train_idx=train_idx, val_idx=val_idx, test_idx=test_idx
             )
-
     train = create_subset(data, train_idx)
     val = create_subset(data, val_idx)
     test = create_subset(data, test_idx)

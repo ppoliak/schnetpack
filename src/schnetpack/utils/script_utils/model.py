@@ -73,6 +73,8 @@ def get_output_module_by_str(module_str):
         return spk.atomistic.Polarizability
     elif module_str == "electronic_spatial_sxtent":
         return spk.atomistic.ElectronicSpatialExtent
+    elif module_str == "charges":
+        return spk.atomistic.Charges
     else:
         raise spk.utils.ScriptError(
             "{} is not a valid output " "module!".format(module_str)
@@ -116,6 +118,7 @@ def get_output_module(args, representation, mean, stddev, atomref):
             negative_dr=negative_dr,
             contributions=contributions,
             stress=stress,
+            mlmm = args.mlmm_indices
         )
     elif output_module_str == "polarizability":
         return spk.atomistic.output_modules.Polarizability(
@@ -155,6 +158,15 @@ def get_output_module(args, representation, mean, stddev, atomref):
             property=args.property,
             derivative=derivative,
             negative_dr=negative_dr,
+        )
+    elif output_module_str == "charges":
+        return spk.atomistic.output_modules.Charges(
+            args.features,
+            predict_magnitude=True,
+            mean=mean[args.property],
+            stddev=stddev[args.property],
+            property=args.property,
+            contributions=contributions,
         )
     else:
         raise NotImplementedError

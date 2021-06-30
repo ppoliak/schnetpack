@@ -160,6 +160,7 @@ class Aggregate(nn.Module):
         axis (int): axis along which pooling is done.
         mean (bool, optional): if True, use average instead for sum pooling.
         keepdim (bool, optional): whether the output tensor has dim retained or not.
+        mlmm (list, optional): decides with atoms to pick for the QM region in delta QMMM embedding
 
     """
 
@@ -168,7 +169,7 @@ class Aggregate(nn.Module):
         self.average = mean
         self.axis = axis
         self.keepdim = keepdim
-
+    
     def forward(self, input, mask=None):
         r"""Compute layer output.
 

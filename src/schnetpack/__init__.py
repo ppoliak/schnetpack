@@ -7,6 +7,7 @@ class Properties:
     Z = "_atomic_numbers"
     charge = "_charge"
     atom_mask = "_atom_mask"
+    mlmm = "_mlmm"
     position = "_positions"
     R = position
     cell = "_cell"
@@ -28,6 +29,7 @@ class Properties:
     energy = "energy"
     forces = "forces"
     stress = "stress"
+    charges = "charges"
     dipole_moment = "dipole_moment"
     total_dipole_moment = "total_dipole_moment"
     polarizability = "polarizability"
@@ -48,6 +50,7 @@ class Properties:
         energy,
         forces,
         stress,
+        charges,
         dipole_moment,
         polarizability,
         shielding,
@@ -62,6 +65,7 @@ class Properties:
 
     electric_properties = [
         dipole_moment,
+        charges,
         dipole_derivatives,
         dipole_derivatives,
         polarizability_derivatives,

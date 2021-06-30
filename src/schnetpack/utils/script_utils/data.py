@@ -6,7 +6,20 @@ from torch.utils.data.sampler import RandomSampler
 from schnetpack.utils.script_utils.script_error import ScriptError
 
 
-__all__ = ["get_loaders", "get_statistics", "get_dataset"]
+__all__ = ["get_loaders", "get_statistics", "get_dataset", "get_indices_mlmm"]
+
+def get_indices_mlmm(filename):
+    
+    mlmm_indices = []
+
+    file = open(filename, "r")
+    for line in file:
+        lines = line.split()
+        for index in lines:
+            #convert to python indices
+            mlmm_indices.append(int(index)-1)
+
+    return mlmm_indices
 
 
 def get_statistics(
@@ -80,7 +93,7 @@ def get_loaders(args, dataset, split_path, logging=None):
         )
     else:
         data_train, data_val, data_test = spk.data.train_test_split(
-            dataset, split_file=split_path
+            dataset,*args.split, split_file=split_path
         )
 
     if logging is not None:
@@ -193,6 +206,7 @@ def get_dataset(args, environment_provider, logging=None):
             load_only=load_only,
             collect_triples=args.model == "wacsf",
             environment_provider=environment_provider,
+            mlmm=args.mlmm_indices,
         )
         return dataset
     else:

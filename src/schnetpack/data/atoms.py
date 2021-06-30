@@ -106,6 +106,7 @@ class AtomsData(Dataset):
         environment_provider=SimpleEnvironmentProvider(),
         collect_triples=False,
         centering_function=get_center_of_mass,
+        mlmm = None,
     ):
         # checks
         if not dbpath.endswith(".db"):
@@ -122,7 +123,6 @@ class AtomsData(Dataset):
 
         # database
         self.dbpath = dbpath
-
         # check if database is deprecated:
         if self._is_deprecated():
             self._deprecation_update()
@@ -145,6 +145,7 @@ class AtomsData(Dataset):
         self.environment_provider = environment_provider
         self.collect_triples = collect_triples
         self.centering_function = centering_function
+        self.mlmm = mlmm
 
     @property
     def available_properties(self):
@@ -251,6 +252,7 @@ class AtomsData(Dataset):
             collect_triples=self.collect_triples,
             centering_function=self.centering_function,
             output=properties,
+            mlmm=self.mlmm,
         )
 
         return at, properties
@@ -646,6 +648,7 @@ def _convert_atoms(
     collect_triples=False,
     centering_function=None,
     output=None,
+    mlmm=None,
 ):
     """
     Helper function to convert ASE atoms object to SchNetPack input format.
@@ -694,7 +697,15 @@ def _convert_atoms(
 
         inputs[Properties.neighbor_offsets_j] = offset_idx_j.astype(np.int)
         inputs[Properties.neighbor_offsets_k] = offset_idx_k.astype(np.int)
-
+    # Calculate mask for MLMM
+    #get mask for ML MM 
+    if mlmm is not None:
+        inputs[Properties.mlmm] = torch.zeros_like(torch.Tensor(inputs[Properties.Z])).float()
+        for mlmm_index in mlmm:
+            inputs[Properties.mlmm][mlmm_index] = 1.0 #torch.ones_like(inputs[Properties.atom_mask][:,mlmm_index])
+    else:
+        inputs[Properties.mlmm] = torch.ones_like(torch.Tensor(inputs[Properties.Z])).float()
+    inputs[Properties.mlmm]=np.array(inputs[Properties.mlmm])
     return inputs
 
 
@@ -747,12 +758,16 @@ class AtomsConverter:
         environment_provider=SimpleEnvironmentProvider(),
         collect_triples=False,
         device=torch.device("cpu"),
+        mlmm = None,
     ):
         self.environment_provider = environment_provider
         self.collect_triples = collect_triples
 
         # Get device
         self.device = device
+
+        # get mlmm indices
+        self.mlmm = mlmm
 
     def __call__(self, atoms):
         """
@@ -763,7 +778,7 @@ class AtomsConverter:
             dict of torch.Tensor: Properties including neighbor lists and masks
                 reformated into SchNetPack input format.
         """
-        inputs = _convert_atoms(atoms, self.environment_provider, self.collect_triples)
+        inputs = _convert_atoms(atoms, environment_provider=self.environment_provider, collect_triples=self.collect_triples,centering_function=get_center_of_mass, output=None, mlmm=self.mlmm)
         inputs = torchify_dict(inputs)
 
         # Calculate masks

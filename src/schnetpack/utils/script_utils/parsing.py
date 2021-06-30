@@ -61,6 +61,9 @@ def get_mode_parsers():
         "--seed", type=int, default=None, help="Set random seed for torch and numpy."
     )
     train_parser.add_argument(
+        "--mlmm", type =str, default = None, help="Enables training of only the QM region for the Delta-Learning approach in QMMM. Requires a file name as argument. "
+    )
+    train_parser.add_argument(
         "--overwrite", help="Remove previous model directory.", action="store_true"
     )
 
@@ -156,6 +159,9 @@ def get_mode_parsers():
         help="Run data-parallel on all available GPUs (specify with environment"
         " variable CUDA_VISIBLE_DEVICES)",
         action="store_true",
+    )
+    eval_parser.add_argument(
+        "--mlmm", type =str, default = None, help="Enables training of only the QM region for the Delta-Learning approach in QMMM. Requires a file name as argument. "
     )
     eval_parser.add_argument(
         "--batch_size",
@@ -540,6 +546,7 @@ def get_data_parsers():
             "polarizability",
             "isotropic_polarizability",
             "electronic_spatial_extent",
+            "charges",
         ],
     )
     custom_data_parser.add_argument(
@@ -606,22 +613,24 @@ def build_parser():
         help="ANI1 dataset help",
         parents=[train_parser, schnet_parser, ani1_parser],
     )
-    schnet_subparsers.add_parser(
+    schnet_matproj = schnet_subparsers.add_parser(
         "matproj",
         help="Materials Project dataset help",
         parents=[train_parser, schnet_parser, matproj_parser],
     )
+    schnet_matproj.set_defaults(normalize_filter=True)
 
     schnet_subparsers.add_parser(
         "md17",
         help="MD17 dataset help",
         parents=[train_parser, schnet_parser, md17_parser],
     )
-    schnet_subparsers.add_parser(
+    schnet_omdb = schnet_subparsers.add_parser(
         "omdb",
         help="Organic Materials dataset help",
         parents=[train_parser, schnet_parser, omdb_parser],
     )
+    schnet_omdb.set_defaults(normalize_filter=True)
 
     schnet_subparsers.add_parser(
         "qm9",

@@ -59,7 +59,8 @@ class SpkCalculator(Calculator):
     energy = Properties.energy
     forces = Properties.forces
     stress = Properties.stress
-    implemented_properties = [energy, forces, stress]
+    charges = Properties.charges
+    implemented_properties = [energy, forces, stress, charges]
 
     def __init__(
         self,
@@ -70,9 +71,11 @@ class SpkCalculator(Calculator):
         energy=None,
         forces=None,
         stress=None,
+        charges=None,
         energy_units="eV",
         forces_units="eV/Angstrom",
         stress_units="eV/Angstrom/Angstrom/Angstrom",
+        mlmm = None,
         **kwargs
     ):
         Calculator.__init__(self, **kwargs)
@@ -84,11 +87,13 @@ class SpkCalculator(Calculator):
             environment_provider=environment_provider,
             collect_triples=collect_triples,
             device=device,
+            mlmm=mlmm,
         )
 
         self.model_energy = energy
         self.model_forces = forces
         self.model_stress = stress
+        self.model_charges = charges
 
         # Convert to ASE internal units (energy=eV, length=A)
         self.energy_units = MDUnits.unit2unit(energy_units, "eV")
@@ -154,7 +159,17 @@ class SpkCalculator(Calculator):
                     )
                 stress = model_results[self.model_stress].cpu().data.numpy()
                 results[self.stress] = stress.reshape((3, 3)) * self.stress_units
-
+            if self.model_charges is not None:
+                if self.model_charges not in model_results.keys():
+                    raise SpkCalculatorError(
+                        "'{}' is not a property of your model. Please "
+                        "check the model"
+                        " properties!".format(self.model_charges)
+                    )
+                charges = model_results[self.model_charges].cpu().data.numpy()
+                results[self.charges] = (
+                    charges.reshape(len(atoms))
+                )
             self.results = results
 
 
