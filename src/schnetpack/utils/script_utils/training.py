@@ -4,7 +4,7 @@ import schnetpack as spk
 import torch
 from torch.optim import Adam
 
-__all__ = ["get_trainer", "simple_loss_fn", "tradeoff_loss_fn", "get_metrics"]
+__all__ = ["get_trainer", "simple_loss_fn", "tradeoff_loss_fn", "get_metrics", "huber_loss_fn"]
 
 
 def get_trainer(args, model, train_loader, val_loader, metrics):
@@ -105,7 +105,10 @@ def get_loss_fn(args):
         contributions=contributions,
         stress=stress,
     )
-    return tradeoff_loss_fn(rho, property_names)
+    if args.Huber == True:
+        return huber_loss_fn(rho, property_names)
+    else:
+        return tradeoff_loss_fn(rho, property_names)
 
 
 def simple_loss_fn(args):
@@ -117,6 +120,18 @@ def simple_loss_fn(args):
 
     return loss
 
+def huber_loss_fn(rho, property_names):
+    def loss(batch, result):
+        err = 0.0
+        for prop, tradeoff_weight in rho.items():
+            diff = torch.abs(batch[property_names[prop]] - result[property_names[prop]])
+            if torch.max(diff) < 3*torch.mean(diff) and prop == "property":
+                diff = diff ** 2
+            err += tradeoff_weight * torch.mean(diff)
+
+        return err
+
+    return loss
 
 def tradeoff_loss_fn(rho, property_names):
     def loss(batch, result):

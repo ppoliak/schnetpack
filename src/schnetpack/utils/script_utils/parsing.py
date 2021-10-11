@@ -52,6 +52,9 @@ def get_mode_parsers():
         "--cuda", help="Set flag to use GPU(s) for training", action="store_true"
     )
     train_parser.add_argument(
+        "--Huber", help="Set flag to use the Huber loss instead of the L2 loss for better handling of outliers.", action="store_true"
+    )
+    train_parser.add_argument(
         "--parallel",
         help="Run data-parallel on all available GPUs (specify with environment"
         " variable CUDA_VISIBLE_DEVICES)",
