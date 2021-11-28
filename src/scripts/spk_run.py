@@ -67,17 +67,18 @@ def evaluate_(args, model, train_loader, val_loader, test_loader, device, train_
     results = []
     if ('train' in args.split) or ('all' in args.split):
         logging.info('Training split...')
-        results.append(['training'] + ['%.7f' % i for i in evaluate_dataset(metrics, model, train_loader, device,properties)])
+        evaluate_dataset(metrics, model, train_loader, device,properties)
 
     if ('validation' in args.split) or ('all' in args.split):
         logging.info('Validation split...')
-        results.append(['validation'] + ['%.7f' % i for i in evaluate_dataset(metrics, model, val_loader, device,properties)])
+        evaluate_dataset(metrics, model, val_loader, device,properties)
     if ('test' in args.split) or ('all' in args.split):
         logging.info('Testing split...')
-        results.append(['test'] + ['%.7f' % i for i in evaluate_dataset(metrics, model, test_loader, device,properties)])
+        evaluate_dataset(metrics, model, test_loader, device,properties)
     header = ','.join(header)
-    results = np.array(results)
+    #results = np.array(results)
 
+    import numpy as np
     np.savetxt(os.path.join(args.modelpath, 'evaluation.csv'), results, header=header, fmt='%s', delimiter=',')
 
 def evaluate_dataset(metrics, model, loader, device,properties):
@@ -114,9 +115,9 @@ def evaluate_dataset(metrics, model, loader, device,properties):
     import numpy as np
     np.savez("prediction.npz",predicted)
     np.savez("reference.npz",qm_values)
-    logging.info('Stored model predictions in {:s} ...'.format(prediction_path))
+    logging.info('Stored model predictions.')
 
-    return results
+    #return results
 
 
 def main(args):
