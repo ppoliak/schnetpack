@@ -124,9 +124,11 @@ def huber_loss_fn(rho, property_names):
     def loss(batch, result):
         err = 0.0
         for prop, tradeoff_weight in rho.items():
-            diff = torch.abs(batch[property_names[prop]] - result[property_names[prop]])
-            if torch.max(diff) < 3*torch.mean(diff) and prop == "property":
-                diff = diff ** 2
+            #diff = torch.abs(batch[property_names[prop]] - result[property_names[prop]])
+            #if torch.max(diff) < 3*torch.mean(diff) and prop == "property":
+            #    diff = diff ** 2
+            #better way of doing it, parameter to choose is one in this case.
+            diff = torch.sqrt(1+diff**2)-1
             err += tradeoff_weight * torch.mean(diff)
 
         return err
