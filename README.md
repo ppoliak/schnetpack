@@ -40,7 +40,7 @@ pip install schnetpack
 #### Clone the repository
 
 ```
-git clone https://github.com/atomistic-machine-learning/schnetpack.git
+git clone https://github.com/juliawestermayr/schnetpack.git
 cd schnetpack
 ```
 
