@@ -138,6 +138,12 @@ def get_mode_parsers():
         default=1000,
     )
     train_parser.add_argument(
+        "--n_layers",
+        type=int,
+        help="Number of hidden layers for prediction block (default: %(default)s)",
+        default=4,
+    )
+    train_parser.add_argument(
         "--checkpoint_interval",
         type=int,
         help="Store checkpoint every n epochs (default: %(default)s)",

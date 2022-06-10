@@ -120,7 +120,8 @@ def get_output_module(args, representation, mean, stddev, atomref):
             negative_dr=negative_dr,
             contributions=contributions,
             stress=stress,
-            mlmm = args.mlmm_indices
+            mlmm = args.mlmm_indices,
+            n_layers=args.n_layers
         )
     elif output_module_str == "polarizability":
         return spk.atomistic.output_modules.Polarizability(
