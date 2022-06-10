@@ -138,7 +138,7 @@ def get_mode_parsers():
         default=1000,
     )
     train_parser.add_argument(
-        "--n_layers",
+        "--n_hlayers",
         type=int,
         help="Number of hidden layers for prediction block (default: %(default)s)",
         default=4,
