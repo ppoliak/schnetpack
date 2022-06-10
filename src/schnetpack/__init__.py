@@ -45,6 +45,7 @@ class Properties:
     magnetic_field = "magnetic_field"
     dielectric_constant = "dielectric_constant"
     magnetic_moments = "magnetic_moments"
+    density = "density"
 
     properties = [
         energy,
@@ -59,6 +60,7 @@ class Properties:
         polarizability_derivatives,
         electric_field,
         magnetic_field,
+        density,
     ]
 
     external_fields = [electric_field, magnetic_field]

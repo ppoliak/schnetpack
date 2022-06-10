@@ -152,10 +152,10 @@ def main(args):
 
         # get statistics
         atomref = dataset.get_atomref(args.property)
-        if args.property == "charges":
+        if args.property == "charges": #or args.property == "density":
             mean = {}
             stddev = {}
-            mean[args.property],stddev[args.property] = None,None 
+            mean[args.property],stddev[args.property] = None,None
         else:
             mean, stddev = get_statistics(
                 args=args,

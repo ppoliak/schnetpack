@@ -14,6 +14,7 @@ __all__ = [
     "ElementalDipoleMoment",
     "Polarizability",
     "ElectronicSpatialExtent",
+    "Density",
 ]
 
 
@@ -713,5 +714,81 @@ class ElectronicSpatialExtent(Atomwise):
 
         if self.contributions:
             result[self.contributions] = charges
+
+        return result
+
+class Density(Atomwise):
+    """
+    Predicts density for the LDFA models. Returns density of the last atom of considered structure. 
+    
+    The class requires every structure to have the same number of atoms.
+
+    Args:
+        n_in (int): input dimension of representation
+        n_layers (int): number of layers in output network (default: 2)
+        n_neurons (list of int or None): number of neurons in each layer of the output
+            network. If `None`, divide neurons by 2 in each layer. (default: None)
+        activation (torch.Function): activation function for hidden nn
+            (default: schnetpack.nn.activations.shifted_softplus)
+        property (str): name of the output property (default: "y")
+        contributions (str or None): Name of property contributions in return dict.
+            No contributions returned if None. (default: None)
+        charge_correction (str or None): Name of charge labels in dataset. If
+            something is selected, the charge contributions are corrected according
+            to the total charges in the dataset. No charge correction if None.
+            (default: None)
+        predict_magnitude (bool): if True, predict the magnitude of the dipole moment
+            instead of the vector (default: False)
+        mean (torch.FloatTensor or None): mean of dipole (default: None)
+        stddev (torch.FloatTensor or None): stddev of dipole (default: None)
+
+    Returns:
+        dict: density for H atom (last atom)
+    """
+
+    def __init__(
+        self,
+        n_in,
+        n_layers=2,
+        n_neurons=None,
+        activation=schnetpack.nn.activations.shifted_softplus,
+        property="y",
+        contributions=None,
+        charge_correction=None,
+        predict_magnitude=False,
+        mean=None,
+        stddev=None,
+        outnet=None,
+    ):
+        self.predict_magnitude = predict_magnitude
+        self.charge_correction = charge_correction
+        super(Density, self).__init__(
+            n_in,
+            1,
+            "sum",
+            n_layers,
+            n_neurons,
+            activation=activation,
+            mean=mean,
+            stddev=stddev,
+            outnet=outnet,
+            property=property,
+            contributions=contributions,
+        )
+
+    def forward(self, inputs):
+        """
+        predicts density 
+        """
+        positions = inputs[Properties.R]
+        atom_mask = inputs[Properties.atom_mask]
+
+        # run prediction
+        density = self.out_net(inputs) * atom_mask[:, :, None]
+
+        y = density.view(density.shape[0],density.shape[1])
+        result = {self.property: y[:,-1]}
+        if self.contributions:
+            result[self.contributions] = density
 
         return result

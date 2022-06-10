@@ -550,6 +550,7 @@ def get_data_parsers():
             "isotropic_polarizability",
             "electronic_spatial_extent",
             "charges",
+            "density",
         ],
     )
     custom_data_parser.add_argument(

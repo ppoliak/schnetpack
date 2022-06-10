@@ -60,7 +60,8 @@ class SpkCalculator(Calculator):
     forces = Properties.forces
     stress = Properties.stress
     charges = Properties.charges
-    implemented_properties = [energy, forces, stress, charges]
+    density = Properties.density
+    implemented_properties = [energy, forces, stress, charges, density]
 
     def __init__(
         self,
@@ -72,6 +73,7 @@ class SpkCalculator(Calculator):
         forces=None,
         stress=None,
         charges=None,
+        density=None,
         energy_units="eV",
         forces_units="eV/Angstrom",
         stress_units="eV/Angstrom/Angstrom/Angstrom",
@@ -94,6 +96,7 @@ class SpkCalculator(Calculator):
         self.model_forces = forces
         self.model_stress = stress
         self.model_charges = charges
+        self.model_density = density
 
         # Convert to ASE internal units (energy=eV, length=A)
         self.energy_units = MDUnits.unit2unit(energy_units, "eV")
@@ -170,8 +173,24 @@ class SpkCalculator(Calculator):
                 results[self.charges] = (
                     charges.reshape(len(atoms))
                 )
+            if self.model_density is not None:
+                if self.model_density not in model_results.keys():
+                    raise SpkCalculatorError(
+                        "'{}' is not a property of your model. Please "
+                        "check the model"
+                        " properties!".format(self.model_density)
+                    )
+                density = model_results[self.model_density].cpu().data.numpy()
+                results[self.density] = (
+                    density
+                )
             self.results = results
 
+    def get_density(self):
+        if ('output' in self.parameters and
+            'density' not in self.parameters['output']):
+                raise NotImplementedError
+        return Calculator.get_property(self, self.density, self.atoms)
 
 class AseInterface:
     """

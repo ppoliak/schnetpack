@@ -75,6 +75,8 @@ def get_output_module_by_str(module_str):
         return spk.atomistic.ElectronicSpatialExtent
     elif module_str == "charges":
         return spk.atomistic.Charges
+    elif module_str == "density":
+        return spk.atomistic.Density
     else:
         raise spk.utils.ScriptError(
             "{} is not a valid output " "module!".format(module_str)
@@ -161,6 +163,15 @@ def get_output_module(args, representation, mean, stddev, atomref):
         )
     elif output_module_str == "charges":
         return spk.atomistic.output_modules.Charges(
+            args.features,
+            predict_magnitude=True,
+            mean=mean[args.property],
+            stddev=stddev[args.property],
+            property=args.property,
+            contributions=contributions,
+        )
+    elif output_module_str == "density":
+        return spk.atomistic.output_modules.Density(
             args.features,
             predict_magnitude=True,
             mean=mean[args.property],
