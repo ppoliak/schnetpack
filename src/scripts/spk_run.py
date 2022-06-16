@@ -138,7 +138,7 @@ def main(args):
     dataset = get_dataset(train_args, environment_provider=environment_provider)
 
     # get dataloaders
-    if args.split_path == "":
+    if args.split_path is None:
         split_path = os.path.join(args.modelpath, "split.npz")
     else:
         split_path = args.split_path
